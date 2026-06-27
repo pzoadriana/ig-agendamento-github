@@ -164,6 +164,7 @@ def main():
         print(f'Nenhum conteudo para publicar hoje ({hoje}).')
         return
 
+    arquivos_para_apagar = []
     erros = 0
     for item in pendentes:
         tipo = item.get('tipo', 'reel')
@@ -184,11 +185,30 @@ def main():
             item['publicado_em'] = datetime.now(timezone(timedelta(hours=-3))).isoformat()
             item['post_id']      = post_id
 
+            # Marca arquivos de midia para apagar apos publicar
+            if tipo == 'reel' and item.get('video_file'):
+                arquivos_para_apagar.append(os.path.join(VIDEO_DIR, item['video_file']))
+            elif tipo == 'imagem' and item.get('arquivo'):
+                arquivos_para_apagar.append(os.path.join(VIDEO_DIR, item['arquivo']))
+            elif tipo == 'carrossel':
+                for m in item.get('midias', []):
+                    if m.get('arquivo'):
+                        arquivos_para_apagar.append(os.path.join(VIDEO_DIR, m['arquivo']))
+
         except Exception as e:
             print(f'ERRO: {e}')
             item['status'] = 'erro'
             item['erro']   = str(e)
             erros += 1
+
+    # Apaga os arquivos de midia publicados para liberar espaco no repositorio
+    for caminho in arquivos_para_apagar:
+        try:
+            if os.path.exists(caminho):
+                os.remove(caminho)
+                print(f'Arquivo removido: {os.path.basename(caminho)}')
+        except Exception as e:
+            print(f'Aviso: nao consegui apagar {caminho}: {e}')
 
     with open(FILA_FILE, 'w', encoding='utf-8') as f:
         json.dump(fila, f, ensure_ascii=False, indent=2)

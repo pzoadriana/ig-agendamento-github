@@ -30,10 +30,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python publicar.py
 
-      - name: Salvar status atualizado no repositorio
+      - name: Salvar status e remover videos publicados
         run: |
           git config user.name  "GitHub Actions"
           git config user.email "actions@github.com"
           git add fila/fila.json
-          git diff --staged --quiet || git commit -m "chore: marcar publicacoes de $(date +%Y-%m-%d)"
+          git add -u videos/
+          git diff --staged --quiet || git commit -m "chore: publicado $(date +%Y-%m-%d) — video removido para liberar espaco"
           git push

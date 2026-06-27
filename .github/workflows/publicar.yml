@@ -1,0 +1,39 @@
+name: Publicar no Instagram
+
+on:
+  schedule:
+    # Todo dia as 14:00 UTC = 11:00 BRT (horario de Brasilia, UTC-3)
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+    # Permite rodar manualmente pelo site do GitHub (botao "Run workflow")
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # precisa para atualizar o fila.json apos publicar
+
+    steps:
+      - name: Baixar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Publicar conteudo do dia
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_BUSINESS_ID:  ${{ secrets.IG_BUSINESS_ID }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python publicar.py
+
+      - name: Salvar status atualizado no repositorio
+        run: |
+          git config user.name  "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add fila/fila.json
+          git diff --staged --quiet || git commit -m "chore: marcar publicacoes de $(date +%Y-%m-%d)"
+          git push

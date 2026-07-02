@@ -54,7 +54,7 @@ def aguardar_processamento(container_id):
 def publicar_reel(item):
     video_file = item['video_file']
     legenda    = item.get('legenda', '')
-    video_url  = f'{RAW_BASE}/{video_file}'
+    video_url  = f'{RAW_BASE}/{urllib.parse.quote(video_file)}'
 
     print(f'Criando container para {video_file}...')
     result = _post(f'{API_BASE}/{IG_ID}/media', {
@@ -90,7 +90,7 @@ def publicar_carrossel(item):
 
     child_ids = []
     for m in midias:
-        url = f'{RAW_BASE}/{m["arquivo"]}'
+        url = f'{RAW_BASE}/{urllib.parse.quote(m["arquivo"])}'
         tipo = m.get('tipo', 'IMAGE')
         params = {'access_token': IG_TOKEN}
         if tipo == 'VIDEO':

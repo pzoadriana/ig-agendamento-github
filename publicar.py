@@ -150,6 +150,29 @@ def publicar_imagem(item):
     return post_id
 
 
+
+def _ja_publicado_hoje(item):
+    """Anti-duplicata: confere no proprio Instagram se um post com esta legenda
+    ja saiu hoje (protege contra corrida entre o Action e o guardiao local,
+    que causou post duplicado em 02/07/2026). Retorna o post_id ou None."""
+    try:
+        hoje = date.today().isoformat()
+        chave = (item.get('legenda') or '')[:60]
+        if not chave:
+            return None
+        url = (f'{API_BASE}/{IG_ID}/media?fields=id,caption,timestamp'
+               f'&limit=10&access_token={IG_TOKEN}')
+        dados = _get(url)
+        for m in dados.get('data', []):
+            ts = (m.get('timestamp') or '')[:10]
+            cap = (m.get('caption') or '')[:60]
+            if ts == hoje and cap == chave:
+                return m.get('id')
+    except Exception as e:
+        print(f'  (aviso: verificacao anti-duplicata falhou: {e})')
+    return None
+
+
 def main():
     hoje = date.today().isoformat()
     print(f'=== Publicador Instagram — {hoje} ===')
@@ -171,6 +194,16 @@ def main():
         titulo = item.get('titulo', '')[:50]
         print(f'\nPublicando [{tipo}]: {titulo}')
         try:
+            ja = _ja_publicado_hoje(item)
+            if ja:
+                print(f'ANTI-DUPLICATA: conteudo ja esta no Instagram (post {ja}). Marcando como publicado sem republicar.')
+                item['status']       = 'publicado'
+                item['publicado_em'] = datetime.now(timezone(timedelta(hours=-3))).isoformat()
+                item['post_id']      = ja
+                item['publicado_por'] = 'anti_duplicata'
+                if item.get('video_file'):
+                    arquivos_para_apagar.append(os.path.join(VIDEO_DIR, item['video_file']))
+                continue
             if tipo == 'reel':
                 post_id = publicar_reel(item)
             elif tipo == 'carrossel':

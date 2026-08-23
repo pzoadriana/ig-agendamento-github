@@ -16,7 +16,10 @@ VIDEO_DIR  = os.path.join(os.path.dirname(__file__), 'videos')
 
 IG_TOKEN   = os.environ['IG_ACCESS_TOKEN']
 IG_ID      = os.environ['IG_BUSINESS_ID']
-API_BASE   = 'https://graph.instagram.com/v21.0'
+# O token e o IG Business ID usados neste fluxo vêm do Facebook Login.
+# Portanto, a publicação deve usar a Graph API do Facebook; o domínio
+# graph.instagram.com aceita tokens do Instagram Login e rejeita este token.
+API_BASE   = 'https://graph.facebook.com/v21.0'
 GITHUB_REPO = os.environ.get('GITHUB_REPOSITORY', '')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
 RAW_BASE   = f'https://raw.githubusercontent.com/{GITHUB_REPO}/main/videos'

@@ -2,8 +2,8 @@ name: Publicar no Instagram
 
 on:
   schedule:
-    # Todo dia as 14:00 UTC = 11:00 BRT (horario de Brasilia, UTC-3)
-    - cron: '0 14 * * *'
+    # Todo dia as 12:00 UTC = 09:00 BRT (horario de Brasilia, UTC-3)
+    - cron: '0 12 * * *'
   workflow_dispatch:
     # Permite rodar manualmente pelo site do GitHub (botao "Run workflow")
 

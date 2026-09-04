@@ -176,9 +176,33 @@ def _ja_publicado_hoje(item):
     return None
 
 
+HEARTBEAT_FILE = os.path.join(os.path.dirname(__file__), 'heartbeat.json')
+
+
+def _local_esta_ativo(limite_minutos=20):
+    """True se o robo local (PC da Adriana) deu sinal de vida recentemente.
+    Enquanto o local estiver ativo, ele mesmo cuida de publicar (respeitando o
+    horario de cada item) — a nuvem so entra como reforco quando o PC esta
+    desligado. Sem essa trava os dois pipelines publicam itens diferentes no
+    mesmo dia (visto em 04/09/2026)."""
+    try:
+        with open(HEARTBEAT_FILE, encoding='utf-8') as f:
+            dados = json.load(f)
+        ultimo = datetime.fromisoformat(dados['ultimo_sinal'].replace('Z', '+00:00'))
+        agora = datetime.now(timezone.utc)
+        return (agora - ultimo) < timedelta(minutes=limite_minutos)
+    except Exception:
+        return False
+
+
 def main():
     hoje = date.today().isoformat()
     print(f'=== Publicador Instagram — {hoje} ===')
+
+    if _local_esta_ativo():
+        print('Robo local ativo (heartbeat recente) — o PC esta cuidando da '
+              'publicacao de hoje. Pulando esta rodada da nuvem.')
+        return
 
     with open(FILA_FILE, encoding='utf-8') as f:
         fila = json.load(f)

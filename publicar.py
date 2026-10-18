@@ -159,7 +159,6 @@ def _ja_publicado_hoje(item):
     ja saiu hoje (protege contra corrida entre o Action e o guardiao local,
     que causou post duplicado em 02/07/2026). Retorna o post_id ou None."""
     try:
-        hoje = date.today().isoformat()
         chave = (item.get('legenda') or '')[:60]
         if not chave:
             return None
@@ -167,9 +166,8 @@ def _ja_publicado_hoje(item):
                f'&limit=10&access_token={IG_TOKEN}')
         dados = _get(url)
         for m in dados.get('data', []):
-            ts = (m.get('timestamp') or '')[:10]
             cap = (m.get('caption') or '')[:60]
-            if ts == hoje and cap == chave:
+            if cap == chave:
                 return m.get('id')
     except Exception as e:
         print(f'  (aviso: verificacao anti-duplicata falhou: {e})')
@@ -195,20 +193,29 @@ def _local_esta_ativo(limite_minutos=20):
         return False
 
 
-def main():
-    hoje = date.today().isoformat()
-    print(f'=== Publicador Instagram — {hoje} ===')
+BRT = timezone(timedelta(hours=-3))
+HORA_PADRAO = '09:00'
 
+
+def main():
+    # Dia e hora de Brasilia (o runner do GitHub fica em UTC: com date.today()
+    # o post de amanha saia as 21h da vespera).
+    agora = datetime.now(BRT)
+    hoje = agora.date().isoformat()
+    print(f'=== Publicador Instagram — {hoje} {agora.strftime("%H:%M")} BRT ===')
+
+    # A trava do heartbeat saiu em 17/10/2026: o PC so publica item 'produzido'
+    # que NAO foi para esta fila, entao com o PC ligado ninguem publicava os
+    # itens da fila. A protecao contra post repetido e o _ja_publicado_hoje().
     if _local_esta_ativo():
-        print('Robo local ativo (heartbeat recente) — o PC esta cuidando da '
-              'publicacao de hoje. Pulando esta rodada da nuvem.')
-        return
+        print('(PC da Adriana ativo; a nuvem publica so os itens desta fila.)')
 
     with open(FILA_FILE, encoding='utf-8') as f:
         fila = json.load(f)
 
     conteudos = fila.get('conteudos', [])
-    pendentes = [c for c in conteudos if c.get('data') == hoje and c.get('status') != 'publicado']
+    pendentes = [c for c in conteudos if c.get('data') == hoje and c.get('status') != 'publicado'
+                 and agora.strftime('%H:%M') >= (c.get('horario') or HORA_PADRAO)]
 
     if not pendentes:
         print(f'Nenhum conteudo para publicar hoje ({hoje}).')

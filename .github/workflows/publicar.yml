@@ -10,6 +10,8 @@ on:
 jobs:
   publicar:
     runs-on: ubuntu-latest
+    env:
+      TZ: America/Sao_Paulo   # tudo no horario de Brasilia (datas, logs e commits)
     permissions:
       contents: write   # precisa para atualizar o fila.json apos publicar
 
